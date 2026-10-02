@@ -1,0 +1,134 @@
+@page "/about"
+
+<PageTitle>Acerca de — GastoHormiga</PageTitle>
+
+<div class="animate-fade-in">
+    <div style="text-align: center; margin-bottom: 3rem; padding-top: 1rem;">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">🐜</div>
+        <h1 style="font-size: 2.5rem; font-weight: 900; letter-spacing: -1px; margin-bottom: 0.75rem;">
+            Acerca de GastoHormiga
+        </h1>
+        <p style="color: var(--color-text-secondary); max-width: 550px; margin: 0 auto; font-size: 1rem; line-height: 1.7;">
+            Una plataforma open source para controlar el gasto hormiga y
+            recuperar el control de tus finanzas personales.
+        </p>
+    </div>
+
+    <div class="gh-grid-2" style="margin-bottom: 2.5rem; gap: 1.5rem; align-items: start;">
+        <!-- PILA TECNOLOGICA -->
+        <div class="gh-card">
+            <div class="gh-section-title" style="margin-bottom: 1.25rem;">Stack Tecnologico</div>
+            <div class="gh-list">
+                <div class="gh-list-item">
+                    <div class="gh-list-item__info">
+                        <div class="gh-list-item__name">Frontend</div>
+                        <div class="gh-list-item__meta">Blazor WebAssembly (.NET 8)</div>
+                    </div>
+                    <span class="gh-badge gh-badge-green">WASM</span>
+                </div>
+                <div class="gh-list-item">
+                    <div class="gh-list-item__info">
+                        <div class="gh-list-item__name">Backend</div>
+                        <div class="gh-list-item__meta">ASP.NET Core Web API RESTful</div>
+                    </div>
+                    <span class="gh-badge gh-badge-green">.NET 8</span>
+                </div>
+                <div class="gh-list-item">
+                    <div class="gh-list-item__info">
+                        <div class="gh-list-item__name">Persistencia</div>
+                        <div class="gh-list-item__meta">Entity Framework Core + SQL Server</div>
+                    </div>
+                    <span class="gh-badge gh-badge-green">EF Core</span>
+                </div>
+                <div class="gh-list-item">
+                    <div class="gh-list-item__info">
+                        <div class="gh-list-item__name">Autenticacion</div>
+                        <div class="gh-list-item__meta">JWT Bearer + BCrypt.Net</div>
+                    </div>
+                    <span class="gh-badge gh-badge-yellow">JWT</span>
+                </div>
+                <div class="gh-list-item">
+                    <div class="gh-list-item__info">
+                        <div class="gh-list-item__name">Verificacion SMS</div>
+                        <div class="gh-list-item__meta">Mock (Open Source) — Plug-in para Twilio</div>
+                    </div>
+                    <span class="gh-badge gh-badge-green">OTP</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- PRINCIPIOS -->
+        <div class="gh-card">
+            <div class="gh-section-title" style="margin-bottom: 1.25rem;">Principios de Diseno</div>
+            <div class="gh-list">
+                <div class="gh-list-item">
+                    <div class="gh-list-item__info">
+                        <div class="gh-list-item__name">SOLID</div>
+                        <div class="gh-list-item__meta">Single Responsibility, Open/Closed, Liskov, Interface Segregation, Dependency Inversion</div>
+                    </div>
+                </div>
+                <div class="gh-list-item">
+                    <div class="gh-list-item__info">
+                        <div class="gh-list-item__name">OWASP Top 10</div>
+                        <div class="gh-list-item__meta">Broken Access Control, Cryptographic Failures, Injection, Auth Failures, IDOR prevention</div>
+                    </div>
+                </div>
+                <div class="gh-list-item">
+                    <div class="gh-list-item__info">
+                        <div class="gh-list-item__name">Arquitectura en Capas</div>
+                        <div class="gh-list-item__meta">Shared (modelos), API (backend), Web (frontend Blazor)</div>
+                    </div>
+                </div>
+                <div class="gh-list-item">
+                    <div class="gh-list-item__info">
+                        <div class="gh-list-item__name">Escalabilidad</div>
+                        <div class="gh-list-item__meta">Multi-pais, multi-divisa. Actualmente: CL, AR, MX, PE, CO, US</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SEGURIDAD -->
+    <div class="gh-card" style="margin-bottom: 2.5rem; border-color: var(--color-border-accent);">
+        <div class="gh-section-title" style="margin-bottom: 1.25rem;">Medidas de Seguridad Implementadas</div>
+        <div class="gh-grid-3">
+            <div style="padding: 1rem; background: rgba(0,212,170,0.05); border-radius: var(--radius-md);">
+                <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">🔐</div>
+                <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 0.25rem;">BCrypt (work factor 12)</div>
+                <div style="font-size: 0.8rem; color: var(--color-text-muted);">Hash de contrasenas resistente a ataques de fuerza bruta</div>
+            </div>
+            <div style="padding: 1rem; background: rgba(0,212,170,0.05); border-radius: var(--radius-md);">
+                <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">🎫</div>
+                <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 0.25rem;">JWT Bearer Tokens</div>
+                <div style="font-size: 0.8rem; color: var(--color-text-muted);">Sesiones stateless con expiracion de 8 horas</div>
+            </div>
+            <div style="padding: 1rem; background: rgba(0,212,170,0.05); border-radius: var(--radius-md);">
+                <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">🚦</div>
+                <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 0.25rem;">Rate Limiting</div>
+                <div style="font-size: 0.8rem; color: var(--color-text-muted);">Proteccion anti-brute force en endpoints de autenticacion</div>
+            </div>
+            <div style="padding: 1rem; background: rgba(0,212,170,0.05); border-radius: var(--radius-md);">
+                <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">🛡️</div>
+                <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 0.25rem;">IDOR Prevention</div>
+                <div style="font-size: 0.8rem; color: var(--color-text-muted);">UsuarioId extraido del JWT, no del request body</div>
+            </div>
+            <div style="padding: 1rem; background: rgba(0,212,170,0.05); border-radius: var(--radius-md);">
+                <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">🌐</div>
+                <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 0.25rem;">CORS Restringido</div>
+                <div style="font-size: 0.8rem; color: var(--color-text-muted);">No AllowAnyOrigin — solo origenes especificos permitidos</div>
+            </div>
+            <div style="padding: 1rem; background: rgba(0,212,170,0.05); border-radius: var(--radius-md);">
+                <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">📝</div>
+                <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 0.25rem;">Errores Genericos</div>
+                <div style="font-size: 0.8rem; color: var(--color-text-muted);">Sin exposicion de detalles internos al cliente</div>
+            </div>
+        </div>
+    </div>
+
+    <div style="text-align: center;">
+        <a href="/" class="btn-gh btn-gh-secondary">
+            <i class="bi bi-arrow-left"></i> Volver al inicio
+        </a>
+    </div>
+</div>

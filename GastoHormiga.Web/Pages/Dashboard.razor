@@ -1,0 +1,534 @@
+@page "/dashboard"
+@attribute [Authorize]
+
+@*
+    ── [CONEXIÓN ARQUITECTÓNICA: DASHBOARD] ────────────────────────────────────
+    - Punto de entrada principal del usuario autenticado.
+    - Code-Behind: Dashboard.razor.cs (toda la lógica C# está allí).
+    - Consume endpoints: api/gastoshormiga, api/suscripciones, api/clasificador
+    - Usa AuthorizedHttpMessageHandler para inyectar el JWT en cada petición.
+    ────────────────────────────────────────────────────────────────────────────
+*@
+
+<PageTitle>Dashboard — GastoHormiga</PageTitle>
+
+<div class="animate-fade-in">
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         ENCABEZADO: Saludo + botones de acción global
+    ════════════════════════════════════════════════════════════════ -->
+    <div class="dashboard-header">
+        <div>
+            <h1 style="font-size: 1.75rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 0.25rem;">
+                Mi Dashboard
+            </h1>
+            <p style="color: var(--color-text-muted); font-size: 0.875rem;">
+                Bienvenido, <strong style="color: var(--color-accent-green);">@nombreUsuario</strong>
+                — Divisa: <span class="gh-badge gh-badge-green">@divisaCodigo</span>
+            </p>
+        </div>
+        <div style="display:flex; gap: 0.75rem; flex-wrap: wrap;">
+            <button class="btn-gh btn-gh-secondary btn-gh-sm" @onclick="AbrirModalTarjeta">
+                <i class="bi bi-credit-card-2-front-fill"></i> Importar Movimiento
+            </button>
+            <button class="btn-gh btn-gh-ghost btn-gh-sm" @onclick="CargarDatos">
+                <i class="bi bi-arrow-clockwise"></i> Actualizar
+            </button>
+        </div>
+    </div>
+
+    @if (cargando)
+    {
+        <div class="gh-loading-container">
+            <div class="gh-spinner"></div>
+            <p>Calculando tu impacto financiero...</p>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(errorMensaje))
+    {
+        <div class="gh-alert gh-alert-error">
+            <i class="bi bi-exclamation-circle-fill"></i> @errorMensaje
+        </div>
+    }
+    else
+    {
+        <!-- ═══════════════════════════════════════════════════════════════
+             ALERTAS HUMAN-IN-THE-LOOP: Patrones detectados por el clasificador
+             Se muestran cuando hay 3+ transacciones de la misma categoría en 7 días.
+        ════════════════════════════════════════════════════════════════ -->
+        @foreach (var alerta in alertasPendientes)
+        {
+            <div class="gh-alert gh-alert-info" style="margin-bottom: 1rem; display: flex; align-items: flex-start; gap: 1rem; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 200px;">
+                    <div style="font-weight: 700; margin-bottom: 0.25rem;">
+                        🧠 Patrón detectado — @alerta.Categoria
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--color-text-secondary);">
+                        Notamos <strong>@alerta.CantidadTransacciones gastos</strong> en esta categoría
+                        esta semana por un total de <strong>@divisaCodigo @FormatearMonto(alerta.MontoAcumulado)</strong>.
+                        ¿Quieres monitorearlo como gasto hormiga o es parte de tu presupuesto regular?
+                    </div>
+                </div>
+                <div style="display: flex; gap: 0.5rem; align-self: center;">
+                    <button class="btn-gh btn-gh-danger btn-gh-sm" @onclick="() => AceptarAlertaComoHormiga(alerta)">
+                        🐜 Sí, es hormiga
+                    </button>
+                    <button class="btn-gh btn-gh-ghost btn-gh-sm" @onclick="() => MarcarAlertaComoPresupuestado(alerta)">
+                        ✅ No, está presupuestado
+                    </button>
+                </div>
+            </div>
+        }
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             MÉTRICAS PRINCIPALES: Solo gastos hormiga efectivos
+        ════════════════════════════════════════════════════════════════ -->
+        <div class="dashboard-metrics">
+            <div class="gh-card-metric metric-green">
+                <div class="metric-label">Fuga Mensual Estimada</div>
+                <div class="metric-value text-green">
+                    @divisaCodigo @FormatearMonto(resumen.TotalMensual)
+                </div>
+                <div class="metric-subtitle">Solo gastos hormiga (Alimentos, Delivery, Suscripciones...)</div>
+            </div>
+            <div class="gh-card-metric metric-red">
+                <div class="metric-label">Impacto Anual Proyectado</div>
+                <div class="metric-value text-red">
+                    @divisaCodigo @FormatearMonto(resumen.TotalAnual)
+                </div>
+                <div class="metric-subtitle">Dinero que podrías estar ahorrando</div>
+            </div>
+            <div class="gh-card-metric metric-yellow">
+                <div class="metric-label">Registros Totales</div>
+                <div class="metric-value">@resumen.CantidadGastos</div>
+                <div class="metric-subtitle">Gastos y pagos registrados</div>
+            </div>
+        </div>
+
+        <div class="dashboard-main-grid">
+
+            <!-- ═══════════════════════════════════════════════════════════════
+                 COLUMNA IZQUIERDA: Agregar gasto + lista de gastos
+            ════════════════════════════════════════════════════════════════ -->
+            <div>
+                <!-- FORMULARIO: Agregar Gasto -->
+                <div class="gh-card" style="margin-bottom: 1.5rem;">
+                    <div class="gh-section-header">
+                        <span class="gh-section-title">Agregar Gasto</span>
+                        <button class="btn-gh btn-gh-ghost btn-gh-sm" @onclick="() => mostrarFormGasto = !mostrarFormGasto">
+                            <i class="bi @(mostrarFormGasto ? "bi-dash-lg" : "bi-plus-lg")"></i>
+                        </button>
+                    </div>
+
+                    @if (mostrarFormGasto)
+                    {
+                        <EditForm Model="@nuevoGasto" OnValidSubmit="AgregarGasto" style="margin-top: 1rem;">
+                            <DataAnnotationsValidator />
+
+                            <!-- CONCEPTO con auto-sugerencia de categoría -->
+                            <div class="gh-form-group">
+                                <label class="gh-label">Descripción</label>
+                                <input class="gh-input"
+                                       value="@nuevoGasto.Concepto"
+                                       @oninput="OnConceptoCambiado"
+                                       placeholder="Ej: Rappi, Café diario, Churrasco..." />
+                                <ValidationMessage For="@(() => nuevoGasto.Concepto)" class="gh-error-text" />
+
+                                <!-- Banner de sugerencia del clasificador -->
+                                @if (sugerencia != null)
+                                {
+                                    <div class="gh-alert @(sugerencia.Confianza >= 80 ? "gh-alert-info" : "")"
+                                         style="padding: 0.4rem 0.75rem; font-size: 0.78rem; margin-top: 0.4rem;
+                                                background: rgba(79,142,247,0.08); border-left: 3px solid var(--color-accent-blue);">
+                                        @if (sugerencia.EsPresupuestadoPorUsuario)
+                                        {
+                                            <span>✅ Marcado como <strong>Presupuestado</strong> por ti → no afecta la fuga</span>
+                                        }
+                                        else if (sugerencia.Confianza >= 80)
+                                        {
+                                            <span>🧠 Clasificado automáticamente como <strong>@sugerencia.CategoriasSugerida</strong></span>
+                                        }
+                                        else
+                                        {
+                                            <span>💡 Sugerencia: <strong>@sugerencia.CategoriasSugerida</strong> — puedes cambiarlo abajo</span>
+                                        }
+                                    </div>
+                                }
+                            </div>
+
+                            <!-- CATEGORÍA: 5 categorías del nuevo sistema -->
+                            <div class="gh-form-group">
+                                <label class="gh-label">Categoría</label>
+                                <InputSelect class="gh-select" @bind-Value="nuevoGasto.Categoria">
+                                    <option value="Alimentos & Antojos">🍔 Alimentos &amp; Antojos</option>
+                                    <option value="Delivery & Conveniencia">🛵 Delivery &amp; Conveniencia</option>
+                                    <option value="Transporte & Movilidad">🚌 Transporte &amp; Movilidad</option>
+                                    <option value="Financiera">💳 Financiera</option>
+                                </InputSelect>
+                            </div>
+
+                            <!-- Para todas las categorías menos Financiera: el usuario decide si es hormiga -->
+                            @if (nuevoGasto.Categoria != "Financiera")
+                            {
+                                <div class="gh-alert" style="padding: 0.5rem 0.75rem; font-size: 0.8rem; margin-bottom: 0.75rem;
+                                                             background: rgba(79,142,247,0.08); border-left: 3px solid var(--color-accent-blue);">
+                                    <i class="bi bi-question-circle"></i>
+                                    <strong>¿Este es un gasto hormiga?</strong>
+                                    <div style="margin-top: 0.4rem; display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                                        <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.85rem;">
+                                            <input type="radio" name="esHormigaGasto"
+                                                   checked="@(nuevoGasto.EsHormigaManual == true || (nuevoGasto.EsHormigaManual == null && CategoriasHormiga.EsHormiga(nuevoGasto.Categoria)))"
+                                                   @onchange="() => nuevoGasto.EsHormigaManual = true" />
+                                            🐜 Sí, es hormiga (fuga mensual)
+                                        </label>
+                                        <label style="display: flex; align-items: center; gap: 0.4rem; cursor: pointer; font-size: 0.85rem;">
+                                            <input type="radio" name="esHormigaGasto"
+                                                   checked="@(nuevoGasto.EsHormigaManual == false)"
+                                                   @onchange="() => nuevoGasto.EsHormigaManual = false" />
+                                            ✅ No, es fijo / presupuestado
+                                        </label>
+                                    </div>
+                                </div>
+                            }
+
+                            <!-- Indicador de si este gasto afecta la fuga mensual -->
+                            @{
+                                bool esHormigaEsta = nuevoGasto.Categoria != "Financiera"
+                                    ? (nuevoGasto.EsHormigaManual ?? CategoriasHormiga.EsHormiga(nuevoGasto.Categoria))
+                                    : false;
+                            }
+                            @if (esHormigaEsta)
+                            {
+                                <div class="gh-alert gh-alert-info" style="padding: 0.5rem 0.75rem; font-size: 0.8rem; margin-bottom: 0.75rem;">
+                                    <i class="bi bi-info-circle"></i> Este gasto se contabilizará en la <strong>Fuga Mensual Estimada</strong>.
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="gh-alert" style="padding: 0.5rem 0.75rem; font-size: 0.8rem; margin-bottom: 0.75rem;
+                                                             background: rgba(100,116,139,0.15); border-left: 3px solid var(--color-text-muted);">
+                                    <i class="bi bi-pin-angle"></i> Gasto fijo / presupuestado — se registra pero no afecta la fuga mensual.
+                                </div>
+                            }
+
+                            <!-- MONTO Y FRECUENCIA -->
+                            <div class="gh-grid-2">
+                                <div class="gh-form-group">
+                                    <label class="gh-label">Costo (@divisaCodigo)</label>
+                                    <InputNumber class="gh-input" @bind-Value="nuevoGasto.CostoEstimado" placeholder="2500" />
+                                    <ValidationMessage For="@(() => nuevoGasto.CostoEstimado)" class="gh-error-text" />
+                                </div>
+                                <div class="gh-form-group">
+                                    <label class="gh-label">Frecuencia</label>
+                                    <div style="display:flex; gap: 0.5rem;">
+                                        @if (nuevoGasto.TipoFrecuencia != "NoAplica")
+                                        {
+                                            <InputNumber class="gh-input" @bind-Value="nuevoGasto.FrecuenciaSemanal" placeholder="1" style="flex:1;" />
+                                        }
+                                        <InputSelect class="gh-select" @bind-Value="nuevoGasto.TipoFrecuencia" style="flex:1;">
+                                            <option value="Semanal">× semana</option>
+                                            <option value="Mensual">× mes</option>
+                                            <option value="NoAplica">No aplica (único)</option>
+                                        </InputSelect>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn-gh btn-gh-primary btn-gh-sm" style="width:100%;" disabled="@guardando">
+                                @if (guardando) { <span>Guardando...</span> } else { <span><i class="bi bi-plus-circle-fill"></i> Agregar</span> }
+                            </button>
+                        </EditForm>
+                    }
+                </div>
+
+                <!-- LISTA DE GASTOS -->
+                <div class="gh-card">
+                    <div class="gh-section-title" style="margin-bottom: 1rem;">
+                        Mis Registros <span class="gh-badge gh-badge-green" style="margin-left: 0.5rem;">@gastos.Count</span>
+                    </div>
+                    @if (!gastos.Any())
+                    {
+                        <div style="text-align: center; padding: 2rem; color: var(--color-text-muted);">
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;">☕</div>
+                            <p>Aún no hay gastos registrados.<br />Agrega tu primer gasto.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="gh-list">
+                            @foreach (var g in gastos)
+                            {
+                                <div class="gh-list-item">
+                                    <div class="gh-list-item__info">
+                                        <div class="gh-list-item__name">
+                                            @g.Concepto
+                                            @if (g.EsImportadoTarjeta)
+                                            {
+                                                <span class="gh-badge @(g.OrigenTarjeta == "TarjetaCredito" ? "gh-badge-red" : "gh-badge-blue")" style="margin-left: 0.4rem; font-size: 0.65rem;">
+                                                    <i class="bi bi-credit-card"></i> @(g.OrigenTarjeta == "TarjetaCredito" ? "Créd." : "Déb.")
+                                                </span>
+                                            }
+                                        </div>
+                                        <div class="gh-list-item__meta">
+                                            <span class="gh-badge @(g.EsHormigaEfectivo ? "gh-badge-green" : "gh-badge-yellow")">@g.Categoria</span>
+                                            @if (g.TipoFrecuencia == "NoAplica")
+                                            {
+                                                <span>&nbsp;· Única vez</span>
+                                            }
+                                            else
+                                            {
+                                                <span>&nbsp;@g.FrecuenciaSemanal×/@g.TipoFrecuencia.ToLower()</span>
+                                            }
+                                            &nbsp;· @g.Fecha.ToLocalTime().ToString("dd/MM/yy")
+                                        </div>
+                                    </div>
+                                    <div style="text-align:right; flex-shrink:0;">
+                                        <div class="gh-list-item__amount">@divisaCodigo @FormatearMonto(g.CostoEstimado)</div>
+                                        @if (g.EsHormigaEfectivo)
+                                        {
+                                            <div style="font-size: 0.7rem; color: var(--color-text-muted);">Anual ≈ @divisaCodigo @FormatearMonto(g.CalculoAnualizado)</div>
+                                        }
+                                    </div>
+                                    <div class="gh-list-item__actions">
+                                        <button class="btn-gh btn-gh-danger btn-gh-sm" @onclick="() => EliminarGasto(g.Id)">
+                                            <i class="bi bi-trash3"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- ═══════════════════════════════════════════════════════════════
+                 COLUMNA DERECHA: Suscripciones
+            ════════════════════════════════════════════════════════════════ -->
+            <div>
+                <!-- AGREGAR SUSCRIPCION -->
+                <div class="gh-card" style="margin-bottom: 1.5rem;">
+                    <div class="gh-section-header">
+                        <span class="gh-section-title">Agregar Suscripcion</span>
+                        <button class="btn-gh btn-gh-ghost btn-gh-sm" @onclick="() => mostrarFormSub = !mostrarFormSub">
+                            <i class="bi @(mostrarFormSub ? "bi-dash-lg" : "bi-plus-lg")"></i>
+                        </button>
+                    </div>
+
+                    @if (mostrarFormSub)
+                    {
+                        <EditForm Model="@nuevaSub" OnValidSubmit="AgregarSuscripcion" style="margin-top: 1rem;">
+                            <DataAnnotationsValidator />
+                            <div class="gh-form-group">
+                                <label class="gh-label">Nombre del servicio</label>
+                                <InputText class="gh-input" @bind-Value="nuevaSub.NombreServicio" placeholder="Netflix, Spotify..." />
+                                <ValidationMessage For="@(() => nuevaSub.NombreServicio)" class="gh-error-text" />
+                            </div>
+                            <div class="gh-grid-2">
+                                <div class="gh-form-group">
+                                    <label class="gh-label">Costo (@divisaCodigo)</label>
+                                    <InputNumber class="gh-input" @bind-Value="nuevaSub.Costo" placeholder="8990" />
+                                    <ValidationMessage For="@(() => nuevaSub.Costo)" class="gh-error-text" />
+                                </div>
+                                <div class="gh-form-group">
+                                    <label class="gh-label">Periodo</label>
+                                    <InputSelect class="gh-select" @bind-Value="nuevaSub.Periodo">
+                                        <option value="Mensual">Mensual</option>
+                                        <option value="Anual">Anual</option>
+                                    </InputSelect>
+                                </div>
+                            </div>
+                            <div class="gh-grid-2">
+                                <div class="gh-form-group">
+                                    <label class="gh-label">Dia de cobro</label>
+                                    <InputNumber class="gh-input" @bind-Value="nuevaSub.DiaPago" min="1" max="31" />
+                                </div>
+                                <div class="gh-form-group" style="display: flex; align-items: flex-end; padding-bottom: 1.25rem;">
+                                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; color: var(--color-text-secondary); font-size: 0.875rem;">
+                                        <InputCheckbox @bind-Value="nuevaSub.AlertaActiva" style="width: 18px; height: 18px; accent-color: var(--color-accent-green);" />
+                                        Alerta activa
+                                    </label>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn-gh btn-gh-primary btn-gh-sm" style="width:100%;" disabled="@guardando">
+                                <i class="bi bi-plus-circle-fill"></i> Agregar
+                            </button>
+                        </EditForm>
+                    }
+                </div>
+
+                <!-- LISTA SUSCRIPCIONES -->
+                <div class="gh-card">
+                    <div class="gh-section-title" style="margin-bottom: 1rem;">
+                        Mis Suscripciones <span class="gh-badge gh-badge-green" style="margin-left: 0.5rem;">@suscripciones.Count</span>
+                    </div>
+                    @if (!suscripciones.Any())
+                    {
+                        <div style="text-align: center; padding: 2rem; color: var(--color-text-muted);">
+                            <div style="font-size: 2rem; margin-bottom: 0.5rem;">📺</div>
+                            <p>No hay suscripciones registradas.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="gh-list">
+                            @foreach (var s in suscripciones)
+                            {
+                                var diasRestantes = s.DiasParaProximoCobro;
+                                <div class="gh-list-item">
+                                    <div class="gh-list-item__info">
+                                        <div class="gh-list-item__name">@s.NombreServicio</div>
+                                        <div class="gh-list-item__meta">
+                                            @s.Periodo · Anual: @divisaCodigo @FormatearMonto(s.CostoAnualEquivalente)
+                                            @if (s.AlertaActiva)
+                                            {
+                                                <span class="gh-badge @(diasRestantes <= 3 ? "gh-badge-red" : "gh-badge-yellow")" style="margin-left: 0.4rem;">
+                                                    @(diasRestantes < 0 ? "Vencido" : $"En {diasRestantes}d")
+                                                </span>
+                                            }
+                                        </div>
+                                    </div>
+                                    <div class="gh-list-item__amount">
+                                        @divisaCodigo @FormatearMonto(s.Costo)
+                                    </div>
+                                    <div class="gh-list-item__actions">
+                                        <button class="btn-gh btn-gh-danger btn-gh-sm" @onclick="() => EliminarSuscripcion(s.Id)">
+                                            <i class="bi bi-trash3"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             DISTRIBUCIÓN ANUAL: Solo gastos hormiga efectivos
+        ════════════════════════════════════════════════════════════════ -->
+        <div class="gh-card" style="margin-top: 1.5rem;">
+            <div class="gh-section-title" style="margin-bottom: 1.25rem;">Distribución de fugas anuales</div>
+            <div class="dashboard-distribution">
+                <div class="dist-item">
+                    <div class="dist-label"><i class="bi bi-collection-play" style="color:var(--color-accent-blue);"></i> Suscripciones (anual)</div>
+                    <div class="dist-value" style="color: var(--color-accent-blue);">
+                        @divisaCodigo @FormatearMonto(suscripciones.Sum(s => s.CostoAnualEquivalente))
+                    </div>
+                </div>
+                <div class="dist-divider"></div>
+                <div class="dist-item">
+                    <div class="dist-label"><i class="bi bi-cup-hot" style="color:var(--color-accent-green);"></i> Gastos Hormiga (anual)</div>
+                    <div class="dist-value" style="color: var(--color-accent-green);">
+                        @divisaCodigo @FormatearMonto(gastos.Where(g => g.EsHormigaEfectivo).Sum(g => g.CalculoAnualizado))
+                    </div>
+                </div>
+                <div class="dist-divider"></div>
+                <div class="dist-item">
+                    <div class="dist-label"><i class="bi bi-piggy-bank" style="color:var(--color-accent-yellow);"></i> Ahorro potencial anual</div>
+                    <div class="dist-value" style="color: var(--color-accent-yellow);">
+                        @divisaCodigo @FormatearMonto(resumen.AhorroPotencialAnual)
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     MODAL: Importar Movimiento Bancario (Tarjeta Mock)
+     Simula la detección de transacciones bancarias con clasificación automática.
+════════════════════════════════════════════════════════════════ -->
+@if (mostrarModalTarjeta)
+{
+    <div class="gh-modal-backdrop" @onclick="CerrarModalTarjeta">
+        <div class="gh-modal" @onclick:stopPropagation="true">
+            <!-- Header del modal -->
+            <div class="gh-modal__header">
+                <div style="display:flex; align-items:center; gap: 0.75rem;">
+                    <div style="width:40px; height:40px; border-radius:50%; background: linear-gradient(135deg, #1a2340, #0f1629); display:flex; align-items:center; justify-content:center; border: 1px solid var(--color-border);">
+                        <i class="bi bi-bank" style="color: var(--color-accent-green); font-size: 1.1rem;"></i>
+                    </div>
+                    <div>
+                        <div style="font-weight: 700; font-size: 0.95rem;">Nuevo movimiento detectado</div>
+                        <div style="font-size: 0.75rem; color: var(--color-text-muted);">Revisa y confirma los detalles</div>
+                    </div>
+                </div>
+                <button class="btn-gh btn-gh-ghost btn-gh-sm" @onclick="CerrarModalTarjeta">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <!-- Tarjeta bancaria simulada -->
+            <div class="mock-bank-card">
+                <div class="mock-bank-card__header">
+                    <span>@(movimientoTarjeta.OrigenTarjeta == "TarjetaCredito" ? "💳 Tarjeta de Crédito" : "💳 Tarjeta de Débito")</span>
+                    <span style="font-size: 0.75rem; opacity: 0.8;">@DateTime.Now.ToString("dd/MM/yyyy HH:mm")</span>
+                </div>
+                <div class="mock-bank-card__comercio">@movimientoTarjeta.Concepto</div>
+                <div class="mock-bank-card__monto">@divisaCodigo @FormatearMonto(movimientoTarjeta.CostoEstimado)</div>
+            </div>
+
+            <!-- Formulario de confirmación -->
+            <EditForm Model="@movimientoTarjeta" OnValidSubmit="ConfirmarMovimientoTarjeta">
+                <DataAnnotationsValidator />
+
+                <div class="gh-form-group">
+                    <label class="gh-label">Tipo de tarjeta</label>
+                    <InputSelect class="gh-select" @bind-Value="movimientoTarjeta.OrigenTarjeta">
+                        <option value="TarjetaDebito">Débito</option>
+                        <option value="TarjetaCredito">Crédito</option>
+                    </InputSelect>
+                </div>
+
+                <div class="gh-form-group">
+                    <label class="gh-label">Comercio / Descripcion</label>
+                    <InputText class="gh-input" @bind-Value="movimientoTarjeta.Concepto" />
+                    <ValidationMessage For="@(() => movimientoTarjeta.Concepto)" class="gh-error-text" />
+                </div>
+
+                <div class="gh-grid-2">
+                    <div class="gh-form-group">
+                        <label class="gh-label">Monto (@divisaCodigo)</label>
+                        <InputNumber class="gh-input" @bind-Value="movimientoTarjeta.CostoEstimado" />
+                        <ValidationMessage For="@(() => movimientoTarjeta.CostoEstimado)" class="gh-error-text" />
+                    </div>
+                    <div class="gh-form-group">
+                        <label class="gh-label">Categoría</label>
+                        <InputSelect class="gh-select" @bind-Value="movimientoTarjeta.Categoria">
+                            <option value="Alimentos & Antojos">🍔 Alimentos &amp; Antojos</option>
+                            <option value="Delivery & Conveniencia">🛵 Delivery &amp; Conveniencia</option>
+                            <option value="Transporte & Movilidad">🚌 Transporte &amp; Movilidad</option>
+                            <option value="Suscripciones & Digital">📱 Suscripciones &amp; Digital</option>
+                            <option value="Financiera">💳 Financiera</option>
+                        </InputSelect>
+                    </div>
+                </div>
+
+                <div class="gh-grid-2">
+                    <div class="gh-form-group">
+                        <label class="gh-label">Frecuencia</label>
+                        <InputNumber class="gh-input" @bind-Value="movimientoTarjeta.FrecuenciaSemanal" placeholder="1" />
+                    </div>
+                    <div class="gh-form-group">
+                        <label class="gh-label">Tipo de frecuencia</label>
+                        <InputSelect class="gh-select" @bind-Value="movimientoTarjeta.TipoFrecuencia">
+                            <option value="Semanal">× semana</option>
+                            <option value="Mensual">× mes</option>
+                            <option value="NoAplica">No aplica (único)</option>
+                        </InputSelect>
+                    </div>
+                </div>
+
+                <div style="display:flex; gap: 0.75rem; margin-top: 0.5rem;">
+                    <button type="button" class="btn-gh btn-gh-ghost" style="flex:1;" @onclick="CerrarModalTarjeta">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn-gh btn-gh-primary" style="flex:2;" disabled="@guardando">
+                        @if (guardando) { <span>Registrando...</span> }
+                        else { <span><i class="bi bi-check2-circle"></i> Confirmar y registrar</span> }
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}

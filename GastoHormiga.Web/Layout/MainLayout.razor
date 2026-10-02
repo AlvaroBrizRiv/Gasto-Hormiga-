@@ -1,0 +1,81 @@
+@inherits LayoutComponentBase
+
+<div class="page">
+    <!-- NAVBAR PREMIUM -->
+    <nav class="gh-navbar">
+        <a class="gh-navbar__brand" href="/">
+            🐜 GastoHormiga
+        </a>
+
+        <ul class="gh-navbar__nav @(menuAbierto ? "open" : "")">
+            <li>
+                <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">
+                    <i class="bi bi-house-fill"></i> Inicio
+                </NavLink>
+            </li>
+            <AuthorizeView>
+                <Authorized>
+                    <li>
+                        <NavLink class="nav-link" href="/dashboard">
+                            <i class="bi bi-graph-up-arrow"></i> Dashboard
+                        </NavLink>
+                    </li>
+                    <li>
+                        <NavLink class="nav-link" href="/mis-gastos">
+                            <i class="bi bi-receipt"></i> Mis Gastos
+                        </NavLink>
+                    </li>
+                </Authorized>
+            </AuthorizeView>
+            <li>
+                <NavLink class="nav-link" href="/about">
+                    <i class="bi bi-info-circle"></i> Acerca de
+                </NavLink>
+            </li>
+        </ul>
+
+        <div class="gh-navbar__actions">
+            <AuthorizeView>
+                <Authorized>
+                    <div class="gh-navbar__user">
+                        <div class="gh-navbar__avatar">
+                            @(context.User.Identity?.Name?.Substring(0, 1).ToUpperInvariant() ?? "U")
+                        </div>
+                        <span class="d-none d-md-inline">@context.User.Identity?.Name?.Split(" ")[0]</span>
+                    </div>
+                    <button class="btn-gh btn-gh-ghost btn-gh-sm" @onclick="CerrarSesion">
+                        <i class="bi bi-box-arrow-right"></i> Salir
+                    </button>
+                </Authorized>
+                <NotAuthorized>
+                    <a class="btn-gh btn-gh-ghost btn-gh-sm" href="/login">
+                        <i class="bi bi-person"></i> Iniciar sesion
+                    </a>
+                    <a class="btn-gh btn-gh-primary btn-gh-sm" href="/registro">
+                        <i class="bi bi-star-fill"></i> Registrarse
+                    </a>
+                </NotAuthorized>
+            </AuthorizeView>
+        </div>
+
+        <button class="gh-navbar__toggler" @onclick="ToggleMenu">
+            <i class="bi @(menuAbierto ? "bi-x-lg" : "bi-list")"></i>
+        </button>
+    </nav>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main>
+        <div class="content">
+            @Body
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="gh-footer">
+        <div>
+            <strong style="color: var(--color-accent-green);">GastoHormiga</strong>
+            &mdash; Alvaro Brizuela &mdash;
+            <span>MIT License 2026</span>
+        </div>
+    </footer>
+</div>

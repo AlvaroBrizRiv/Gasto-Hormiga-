@@ -1,0 +1,186 @@
+@page "/registro"
+
+<PageTitle>Registrarse — GastoHormiga</PageTitle>
+
+<div class="gh-auth-container" style="padding-top: 2rem; padding-bottom: 2rem;">
+    <div class="gh-auth-card animate-fade-in" style="max-width: 520px;">
+
+        <!-- STEPPER -->
+        <div class="gh-stepper">
+            <div class="gh-step @(paso >= 1 ? (paso == 1 ? "active" : "completed") : "")">
+                <div class="gh-step__circle">
+                    @if (paso > 1) { <i class="bi bi-check-lg"></i> } else { <span>1</span> }
+                </div>
+                <span class="gh-step__label">Tus datos</span>
+            </div>
+            <div class="gh-step-divider"></div>
+            <div class="gh-step @(paso >= 2 ? (paso == 2 ? "active" : "completed") : "")">
+                <div class="gh-step__circle">
+                    @if (paso > 2) { <i class="bi bi-check-lg"></i> } else { <span>2</span> }
+                </div>
+                <span class="gh-step__label">Verificar SMS</span>
+            </div>
+            <div class="gh-step-divider"></div>
+            <div class="gh-step @(paso == 3 ? "active" : "")">
+                <div class="gh-step__circle"><span>3</span></div>
+                <span class="gh-step__label">Listo</span>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(errorMensaje))
+        {
+            <div class="gh-alert gh-alert-error">
+                <i class="bi bi-exclamation-circle-fill"></i> @errorMensaje
+            </div>
+        }
+
+        <!-- PASO 1: DATOS DEL USUARIO -->
+        @if (paso == 1)
+        {
+            <div class="gh-auth-card__header">
+                <div class="gh-auth-card__logo">👤</div>
+                <h1 class="gh-auth-card__title">Crear cuenta</h1>
+                <p class="gh-auth-card__subtitle">Completa tus datos para comenzar</p>
+            </div>
+
+            <EditForm Model="@registroDto" OnValidSubmit="HandleRegistro">
+                <DataAnnotationsValidator />
+
+                <div class="gh-grid-2">
+                    <div class="gh-form-group">
+                        <label class="gh-label">Nombre</label>
+                        <InputText class="gh-input" @bind-Value="registroDto.Nombre" placeholder="Juan" />
+                        <ValidationMessage For="@(() => registroDto.Nombre)" class="gh-error-text" />
+                    </div>
+                    <div class="gh-form-group">
+                        <label class="gh-label">Apellido</label>
+                        <InputText class="gh-input" @bind-Value="registroDto.Apellido" placeholder="Perez" />
+                        <ValidationMessage For="@(() => registroDto.Apellido)" class="gh-error-text" />
+                    </div>
+                </div>
+
+                <div class="gh-form-group">
+                    <label class="gh-label"><i class="bi bi-envelope"></i> Correo electronico</label>
+                    <InputText class="gh-input" @bind-Value="registroDto.Email" type="email"
+                               placeholder="tu@correo.com" autocomplete="email" />
+                    <ValidationMessage For="@(() => registroDto.Email)" class="gh-error-text" />
+                </div>
+
+                <div class="gh-grid-2">
+                    <div class="gh-form-group">
+                        <label class="gh-label">Pais</label>
+                        <InputSelect class="gh-select" @bind-Value="registroDto.CodigoPais" @oninput="ActualizarDivisa">
+                            <option value="CL">🇨🇱 Chile</option>
+                            <option value="AR">🇦🇷 Argentina</option>
+                            <option value="MX">🇲🇽 Mexico</option>
+                            <option value="PE">🇵🇪 Peru</option>
+                            <option value="CO">🇨🇴 Colombia</option>
+                            <option value="US">🇺🇸 USA</option>
+                        </InputSelect>
+                    </div>
+                    <div class="gh-form-group">
+                        <label class="gh-label">Telefono</label>
+                        <InputText class="gh-input" @bind-Value="registroDto.Telefono"
+                                   placeholder="912345678" type="tel" />
+                        <ValidationMessage For="@(() => registroDto.Telefono)" class="gh-error-text" />
+                    </div>
+                </div>
+
+                <div class="gh-form-group">
+                    <label class="gh-label"><i class="bi bi-lock"></i> Contrasena</label>
+                    <InputText class="gh-input" @bind-Value="registroDto.Password"
+                               type="password" placeholder="Minimo 8 caracteres" autocomplete="new-password" />
+                    <ValidationMessage For="@(() => registroDto.Password)" class="gh-error-text" />
+                </div>
+
+                <div class="gh-form-group">
+                    <label class="gh-label"><i class="bi bi-lock-fill"></i> Confirmar contrasena</label>
+                    <InputText class="gh-input" @bind-Value="registroDto.ConfirmarPassword"
+                               type="password" placeholder="Repite la contrasena" />
+                    <ValidationMessage For="@(() => registroDto.ConfirmarPassword)" class="gh-error-text" />
+                </div>
+
+                <button type="submit" class="btn-gh btn-gh-primary" style="width: 100%;" disabled="@cargando">
+                    @if (cargando)
+                    {
+                        <span>Registrando...</span>
+                    }
+                    else
+                    {
+                        <i class="bi bi-arrow-right-circle-fill"></i>
+                        <span>Continuar</span>
+                    }
+                </button>
+            </EditForm>
+
+            <div class="gh-auth-divider">o</div>
+            <div style="text-align: center; font-size: 0.875rem; color: var(--color-text-muted);">
+                Ya tienes cuenta?
+                <a href="/login" style="color: var(--color-accent-green); font-weight: 600; text-decoration: none;">
+                    Inicia sesion
+                </a>
+            </div>
+        }
+
+        <!-- PASO 2: VERIFICACION OTP -->
+        @if (paso == 2)
+        {
+            <div class="gh-auth-card__header">
+                <div class="gh-auth-card__logo">📱</div>
+                <h1 class="gh-auth-card__title">Verifica tu telefono</h1>
+                <p class="gh-auth-card__subtitle">
+                    Enviamos un codigo de 6 digitos a tu telefono.<br />
+                    <strong style="color: var(--color-accent-green);">Revisa los logs de la API</strong> (modo mock).
+                </p>
+            </div>
+
+            <div class="gh-alert gh-alert-info" style="margin-bottom: 1.5rem;">
+                <i class="bi bi-info-circle-fill"></i>
+                <div>
+                    <strong>Modo desarrollo:</strong> El codigo OTP aparece en la consola del servidor API.
+                    Busca el mensaje con 🔑 [SMS MOCK].
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-bottom: 1.5rem;">
+                <label class="gh-label" style="text-align: center; display: block; margin-bottom: 0.75rem;">
+                    Codigo de verificacion
+                </label>
+                <input type="text" class="gh-otp-input" maxlength="6" placeholder="000000"
+                       @bind="codigoOtp" @bind:event="oninput" />
+            </div>
+
+            <button class="btn-gh btn-gh-primary" style="width: 100%; margin-bottom: 1rem;"
+                    @onclick="HandleVerificarOtp" disabled="@(cargando || codigoOtp.Length < 6)">
+                @if (cargando)
+                {
+                    <span>Verificando...</span>
+                }
+                else
+                {
+                    <i class="bi bi-shield-check-fill"></i>
+                    <span>Verificar codigo</span>
+                }
+            </button>
+
+            <button class="btn-gh btn-gh-ghost" style="width: 100%;" @onclick="ReenviarOtp" disabled="@cargando">
+                <i class="bi bi-arrow-clockwise"></i> Reenviar codigo
+            </button>
+        }
+
+        <!-- PASO 3: EXITO -->
+        @if (paso == 3)
+        {
+            <div style="text-align: center; padding: 1rem 0;">
+                <div style="font-size: 4rem; margin-bottom: 1rem;">🎉</div>
+                <h1 class="gh-auth-card__title">Cuenta verificada</h1>
+                <p class="gh-auth-card__subtitle" style="margin-bottom: 2rem;">
+                    Tu cuenta esta lista. Ya puedes iniciar sesion y empezar a controlar tus finanzas.
+                </p>
+                <a href="/login" class="btn-gh btn-gh-primary btn-gh-lg">
+                    <i class="bi bi-box-arrow-in-right"></i> Iniciar sesion
+                </a>
+            </div>
+        }
+    </div>
+</div>

@@ -1,0 +1,32 @@
+<CascadingAuthenticationState>
+    <Router AppAssembly="@typeof(App).Assembly">
+        <Found Context="routeData">
+            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
+                <NotAuthorized>
+                    @if (context.User.Identity?.IsAuthenticated != true)
+                    {
+                        <RedirectToLogin />
+                    }
+                    else
+                    {
+                        <p role="alert">No tienes permiso para ver esta página.</p>
+                    }
+                </NotAuthorized>
+            </AuthorizeRouteView>
+            <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+        </Found>
+        <NotFound>
+            <PageTitle>Página no encontrada — GastoHormiga</PageTitle>
+            <LayoutView Layout="@typeof(MainLayout)">
+                <div class="not-found-container">
+                    <div class="not-found-content">
+                        <div class="not-found-code">404</div>
+                        <h1>Página no encontrada</h1>
+                        <p>Lo sentimos, la página que buscas no existe o fue movida.</p>
+                        <a href="/" class="btn-primary-gh">Volver al inicio</a>
+                    </div>
+                </div>
+            </LayoutView>
+        </NotFound>
+    </Router>
+</CascadingAuthenticationState>

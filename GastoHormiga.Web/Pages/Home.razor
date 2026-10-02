@@ -1,0 +1,119 @@
+@page "/"
+
+@* 
+    ── [CONEXIÓN ARQUITECTÓNICA: HOME PAGE] ────────────────────────────────────
+    - Punto de entrada principal (Landing Page).
+    - Utiliza el componente <AuthorizeView> provisto por Microsoft.AspNetCore.Components.Authorization.
+    - Este componente interactúa de forma invisible con CustomAuthStateProvider.cs:
+      - Si el usuario tiene un JWT válido en LocalStorage, muestra el botón "Ir a mi Dashboard".
+      - Si no hay JWT o expiró, muestra los botones "Empezar gratis" y "Iniciar sesión".
+    ──────────────────────────────────────────────────────────────────────────── 
+*@
+<PageTitle>GastoHormiga — Toma el control de tus finanzas</PageTitle>
+
+<!-- HERO SECTION -->
+<div class="gh-hero">
+    <div class="gh-hero__content">
+        <div class="gh-hero__badge">🐜 Finanzas Personales Inteligentes</div>
+        <h1 class="gh-hero__title">
+            ¿Sabes cuánto dinero<br /><span class="highlight">pierdes cada mes?</span>
+        </h1>
+        <p class="gh-hero__subtitle">
+            El gasto hormiga son pequeñas compras diarias que, sumadas, representan
+            cientos de miles de pesos al año. GastoHormiga te ayuda a visualizarlos.
+        </p>
+        <div class="gh-hero__actions">
+            <AuthorizeView>
+                <Authorized>
+                    <a href="/dashboard" class="btn-gh btn-gh-primary btn-gh-lg">
+                        <i class="bi bi-graph-up-arrow"></i> Ir a mi Dashboard
+                    </a>
+                </Authorized>
+                <NotAuthorized>
+                    <a href="/registro" class="btn-gh btn-gh-primary btn-gh-lg">
+                        <i class="bi bi-star-fill"></i> Empezar gratis
+                    </a>
+                    <a href="/login" class="btn-gh btn-gh-secondary btn-gh-lg">Iniciar sesión</a>
+                </NotAuthorized>
+            </AuthorizeView>
+        </div>
+        <div class="gh-hero__stats">
+            <div class="gh-hero__stat">
+                <div class="gh-hero__stat-value">$180K+</div>
+                <div class="gh-hero__stat-label">Perdida anual promedio</div>
+            </div>
+            <div class="gh-hero__stat">
+                <div class="gh-hero__stat-value">15K</div>
+                <div class="gh-hero__stat-label">Por mes en suscripciones</div>
+            </div>
+            <div class="gh-hero__stat">
+                <div class="gh-hero__stat-value">100%</div>
+                <div class="gh-hero__stat-label">Gratuito y open source</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CARACTERISTICAS -->
+<div class="content">
+    <div style="text-align: center; margin-bottom: 3rem; padding-top: 2rem;">
+        <h2 style="font-size: 2rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 0.75rem;">
+            Todo lo que necesitas para ahorrar
+        </h2>
+        <p style="color: var(--color-text-secondary); max-width: 500px; margin: 0 auto;">
+            Una plataforma completa para rastrear, analizar y reducir tus gastos hormiga.
+        </p>
+    </div>
+    <div class="gh-features-grid" style="margin-bottom: 4rem;">
+        <div class="gh-feature-card">
+            <div class="gh-feature-icon">📊</div>
+            <h3>Dashboard en tiempo real</h3>
+            <p>Visualiza tu gasto semanal, mensual y anual. Conoce exactamente cuánto dinero se te escapa.</p>
+        </div>
+        <div class="gh-feature-card">
+            <div class="gh-feature-icon">📱</div>
+            <h3>Verificación por SMS</h3>
+            <p>Registro seguro con verificacion de telefono. Un usuario, una cuenta, sin duplicados.</p>
+        </div>
+        <div class="gh-feature-card">
+            <div class="gh-feature-icon">🔔</div>
+            <h3>Alertas de suscripciones</h3>
+            <p>Recibe alertas antes de que te cobren una suscripción. Nunca mas pagues por algo olvidado.</p>
+        </div>
+        <div class="gh-feature-card">
+            <div class="gh-feature-icon">💰</div>
+            <h3>Cálculo de ahorro potencial</h3>
+            <p>Descubre cuánto podrías ahorrar si reduces tus gastos hormiga. La motivación que necesitas.</p>
+        </div>
+        <div class="gh-feature-card">
+            <div class="gh-feature-icon">🌍</div>
+            <h3>Multi-país y multi-divisa</h3>
+            <p>Compatible con Chile (CLP), Argentina (ARS), México (MXN) y más. Escalable globalmente.</p>
+        </div>
+        <div class="gh-feature-card">
+            <div class="gh-feature-icon">🔒</div>
+            <h3>Seguridad OWASP</h3>
+            <p>Protección contra las principales vulnerabilidades web. Tus datos financieros siempre seguros.</p>
+        </div>
+    </div>
+    <div class="gh-card" style="text-align: center; padding: 3rem; background: linear-gradient(135deg, rgba(0,212,170,0.08), rgba(79,142,247,0.08)); border-color: var(--color-border-accent);">
+        <h2 style="font-size: 1.75rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 0.75rem;">
+            Empieza hoy, es gratis
+        </h2>
+        <p style="color: var(--color-text-secondary); margin-bottom: 1.5rem; max-width: 400px; margin-left: auto; margin-right: auto;">
+            Registrate en menos de 2 minutos y empieza a recuperar el control de tu dinero.
+        </p>
+        <AuthorizeView>
+            <NotAuthorized>
+                <a href="/registro" class="btn-gh btn-gh-primary btn-gh-lg">
+                    <i class="bi bi-rocket-takeoff-fill"></i> Crear cuenta gratis
+                </a>
+            </NotAuthorized>
+            <Authorized>
+                <a href="/dashboard" class="btn-gh btn-gh-primary btn-gh-lg">
+                    <i class="bi bi-graph-up-arrow"></i> Ver mi Dashboard
+                </a>
+            </Authorized>
+        </AuthorizeView>
+    </div>
+</div>

@@ -1,0 +1,6 @@
+@GastoHormiga.API_HostAddress = http://localhost:5046
+
+GET {{GastoHormiga.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

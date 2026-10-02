@@ -1,0 +1,167 @@
+@page "/mis-gastos"
+@attribute [Authorize]
+
+@*
+    ── [CONEXIÓN ARQUITECTÓNICA: MIS GASTOS] ───────────────────────────────────
+    - Página de historial completo de gastos del usuario.
+    - Code-Behind: MisGastos.razor.cs (toda la lógica C# está allí).
+    - Consume: api/gastoshormiga vía HttpClient autorizado.
+    - Muestra todos los registros, tanto hormiga como fijos, con filtros y orden.
+    ────────────────────────────────────────────────────────────────────────────
+*@
+
+<PageTitle>Mis Gastos — GastoHormiga</PageTitle>
+
+<div class="animate-fade-in">
+    <div style="margin-bottom: 2rem;">
+        <h1 style="font-size: 1.75rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 0.25rem;">
+            Historial de Gastos
+        </h1>
+        <p style="color: var(--color-text-muted); font-size: 0.875rem;">
+            Todos tus gastos y pagos registrados
+        </p>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         FILTROS: Por categoría y criterio de ordenamiento
+    ════════════════════════════════════════════════════════════════ -->
+    <div class="gh-card" style="margin-bottom: 1.5rem; display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
+        <div class="gh-form-group" style="flex: 1; min-width: 150px; margin-bottom: 0;">
+            <label class="gh-label">Categoría</label>
+            <select class="gh-select" @bind="filtroCategoria">
+                <option value="">Todas las categorías</option>
+                <!-- Categorías hormiga (cuentan en fuga mensual) -->
+                <optgroup label="── Gastos Hormiga ──">
+                    <option value="Alimentos & Antojos">🍔 Alimentos &amp; Antojos</option>
+                    <option value="Delivery & Conveniencia">🛵 Delivery &amp; Conveniencia</option>
+                    <option value="Transporte & Movilidad">🚌 Transporte &amp; Movilidad</option>
+                    <option value="Suscripciones & Digital">📱 Suscripciones &amp; Digital</option>
+                </optgroup>
+                <!-- Gastos fijos (solo registro, no afectan fuga) -->
+                <optgroup label="── Gastos Fijos ──">
+                    <option value="Financiera">💳 Financiera</option>
+                </optgroup>
+            </select>
+        </div>
+        <div class="gh-form-group" style="flex: 1; min-width: 150px; margin-bottom: 0;">
+            <label class="gh-label">Ordenar por</label>
+            <select class="gh-select" @bind="ordenamiento">
+                <option value="fecha-desc">Más reciente</option>
+                <option value="fecha-asc">Más antiguo</option>
+                <option value="costo-desc">Mayor costo</option>
+                <option value="costo-asc">Menor costo</option>
+            </select>
+        </div>
+        <button class="btn-gh btn-gh-secondary btn-gh-sm" @onclick="CargarGastos">
+            <i class="bi bi-funnel-fill"></i> Filtrar
+        </button>
+    </div>
+
+    @if (cargando)
+    {
+        <div class="gh-loading-container">
+            <div class="gh-spinner"></div>
+            <p>Cargando historial...</p>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(errorMensaje))
+    {
+        <div class="gh-alert gh-alert-error">
+            <i class="bi bi-exclamation-circle-fill"></i> @errorMensaje
+        </div>
+    }
+    else
+    {
+        <!-- ═══════════════════════════════════════════════════════════════
+             RESUMEN RÁPIDO: Suma TODOS los registros filtrados
+        ════════════════════════════════════════════════════════════════ -->
+        <div class="gh-grid-3" style="margin-bottom: 1.5rem;">
+            <div class="gh-card-metric metric-green">
+                <div class="metric-label">Total de registros</div>
+                <div class="metric-value">@GastosFiltrados.Count()</div>
+                <div class="metric-subtitle">Transacciones visibles con este filtro</div>
+            </div>
+            <div class="gh-card-metric metric-red">
+                <div class="metric-label">Total mensual (filtrado)</div>
+                <div class="metric-value text-red" style="font-size: 1.4rem;">
+                    @divisaCodigo @FormatearMonto(GastosFiltrados.Sum(g => g.CalculoMensual))
+                </div>
+                <div class="metric-subtitle">
+                    Suma mensualizada de los registros que estás filtrando.<br/>
+                </div>
+            </div>
+            <div class="gh-card-metric metric-yellow">
+                <div class="metric-label">Total anual (filtrado)</div>
+                <div class="metric-value text-yellow" style="font-size: 1.4rem;">
+                    @divisaCodigo @FormatearMonto(GastosFiltrados.Sum(g => g.CalculoAnualizado))
+                </div>
+                <div class="metric-subtitle">
+                    Proyección a 12 meses de los registros que estás filtrando.<br/>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════════
+             TABLA DE GASTOS: Lista completa con badges de clasificación
+        ════════════════════════════════════════════════════════════════ -->
+        <div class="gh-card">
+            @if (!GastosFiltrados.Any())
+            {
+                <div style="text-align: center; padding: 3rem; color: var(--color-text-muted);">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">📭</div>
+                    <p>No hay gastos que coincidan con los filtros seleccionados.</p>
+                </div>
+            }
+            else
+            {
+                <div class="gh-list">
+                    @foreach (var g in GastosFiltrados)
+                    {
+                        <div class="gh-list-item">
+                            <div class="gh-list-item__info" style="flex: 2;">
+                                <div class="gh-list-item__name">
+                                    @g.Concepto
+                                    @if (g.EsImportadoTarjeta)
+                                    {
+                                        <span class="gh-badge @(g.OrigenTarjeta == "TarjetaCredito" ? "gh-badge-red" : "gh-badge-blue")" style="margin-left: 0.4rem; font-size: 0.65rem;">
+                                            <i class="bi bi-credit-card"></i> @(g.OrigenTarjeta == "TarjetaCredito" ? "Crédito" : "Débito")
+                                        </span>
+                                    }
+                                </div>
+                                <div class="gh-list-item__meta">
+                                    <!-- Badge de color verde si es hormiga, amarillo si es fijo -->
+                                    <span class="gh-badge @(g.EsHormigaEfectivo ? "gh-badge-green" : "gh-badge-yellow")">@g.Categoria</span>
+                                    &nbsp;@g.Fecha.ToLocalTime().ToString("dd/MM/yyyy")
+                                    @if (g.TipoFrecuencia == "NoAplica")
+                                    {
+                                        <span>&nbsp;· Única vez</span>
+                                    }
+                                    else
+                                    {
+                                        <span>&nbsp;· @g.FrecuenciaSemanal×/@g.TipoFrecuencia.ToLower()</span>
+                                    }
+                                    <!-- Indicador si el usuario hizo override de clasificación -->
+                                    @if (g.EsHormigaManual.HasValue)
+                                    {
+                                        <span class="gh-badge @(g.EsHormigaManual.Value ? "gh-badge-red" : "gh-badge-blue")" style="margin-left: 0.35rem; font-size: 0.65rem;">
+                                            @(g.EsHormigaManual.Value ? "🐜 Override hormiga" : "✅ Presupuestado")
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                            <div style="text-align: right; flex-shrink: 0;">
+                                <div class="gh-list-item__amount">@divisaCodigo @FormatearMonto(g.CostoEstimado)</div>
+                                @if (g.EsHormigaEfectivo)
+                                {
+                                    <div style="font-size: 0.75rem; color: var(--color-text-muted);">
+                                        Anual: @divisaCodigo @FormatearMonto(g.CalculoAnualizado)
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>

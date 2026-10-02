@@ -1,0 +1,74 @@
+@page "/login"
+
+<PageTitle>Iniciar sesion — GastoHormiga</PageTitle>
+
+<div class="gh-auth-container">
+    <div class="gh-auth-card animate-fade-in">
+        <div class="gh-auth-card__header">
+            <div class="gh-auth-card__logo">🐜</div>
+            <h1 class="gh-auth-card__title">Bienvenido de vuelta</h1>
+            <p class="gh-auth-card__subtitle">Ingresa a tu cuenta GastoHormiga</p>
+        </div>
+
+        @if (!string.IsNullOrEmpty(errorMensaje))
+        {
+            <div class="gh-alert gh-alert-error">
+                <i class="bi bi-exclamation-circle-fill"></i>
+                @errorMensaje
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(mensajeExito))
+        {
+            <div class="gh-alert gh-alert-success">
+                <i class="bi bi-check-circle-fill"></i>
+                @mensajeExito
+            </div>
+        }
+
+        <EditForm Model="@loginDto" OnValidSubmit="HandleLogin">
+            <DataAnnotationsValidator />
+
+            <div class="gh-form-group">
+                <label class="gh-label" for="email">
+                    <i class="bi bi-envelope"></i> Correo electronico
+                </label>
+                <InputText id="email" class="gh-input" @bind-Value="loginDto.Email"
+                           placeholder="tu@correo.com" type="email" autocomplete="email" />
+                <ValidationMessage For="@(() => loginDto.Email)" class="gh-error-text" />
+            </div>
+
+            <div class="gh-form-group">
+                <label class="gh-label" for="password">
+                    <i class="bi bi-lock"></i> Contrasena
+                </label>
+                <InputText id="password" class="gh-input" @bind-Value="loginDto.Password"
+                           placeholder="Tu contrasena" type="password" autocomplete="current-password" />
+                <ValidationMessage For="@(() => loginDto.Password)" class="gh-error-text" />
+            </div>
+
+            <button type="submit" class="btn-gh btn-gh-primary" style="width: 100%; margin-top: 0.5rem;"
+                    disabled="@cargando">
+                @if (cargando)
+                {
+                    <span class="gh-spinner" style="width:20px;height:20px;border-width:2px;margin:0;"></span>
+                    <span>Iniciando sesion...</span>
+                }
+                else
+                {
+                    <i class="bi bi-box-arrow-in-right"></i>
+                    <span>Iniciar sesion</span>
+                }
+            </button>
+        </EditForm>
+
+        <div class="gh-auth-divider">o</div>
+
+        <div style="text-align: center; font-size: 0.875rem; color: var(--color-text-muted);">
+            No tienes cuenta?
+            <a href="/registro" style="color: var(--color-accent-green); font-weight: 600; text-decoration: none;">
+                Registrate gratis
+            </a>
+        </div>
+    </div>
+</div>
