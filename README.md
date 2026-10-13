@@ -1,10 +1,10 @@
-Gasto Hormiga - Gestor de Finanzas Personales
+# Gasto Hormiga - Gestor de Finanzas Personales
 
 Bienvenido al repositorio del proyecto Gasto Hormiga, una aplicación web diseñada para ayudar a los usuarios a identificar, clasificar y gestionar esos pequeños gastos cotidianos que impactan la economía personal. (Este proyecto aún está en proceso de análisis y mejora).
 
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-🚀 Funcionalidad de la Web
+
+## 🚀 Funcionalidad de la Web
 
 La plataforma ofrece una serie de herramientas enfocadas en la gestión financiera:
 
@@ -20,9 +20,9 @@ Alertas y Patrones: Identificación de patrones de consumo y alertas para mejora
 
 Autenticación de Usuarios: Sistema de registro, inicio de sesión y recuperación para proteger los datos personales.
 
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-🏗️ Arquitectura del Sistema
+
+## 🏗️ Arquitectura del Sistema
 
 El sistema está construido bajo una arquitectura Cliente-Servidor moderna, dividida en tres capas principales que garantizan la escalabilidad y el mantenimiento:
 
@@ -34,9 +34,9 @@ Librería Compartida (GastoHormiga.Shared): Una biblioteca de clases que contien
 
 Base de Datos: Gestionada a través de Entity Framework Core utilizando un enfoque Code-First mediante migraciones controladas.
 
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-💻 Lenguajes y Tecnologías Ocupadas
+
+## 💻 Lenguajes y Tecnologías Ocupadas
 
 C#: El lenguaje principal utilizado tanto en el backend (API) como en el frontend (Blazor).
 
@@ -46,9 +46,9 @@ HTML5 y CSS3: Para la estructura visual y el diseño, complementado con el frame
 
 SQL: (Vía Entity Framework Core) Para el almacenamiento relacional de datos.
 
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-🔒 Seguridad
+
+## 🔒 Seguridad
 
 La protección de la información del usuario es una prioridad en el proyecto. Se implementaron los siguientes mecanismos:
 
@@ -60,9 +60,9 @@ Verificación de Identidad: Integración de envío de códigos OTP (One-Time Pas
 
 Protección de Datos: Las contraseñas se almacenan mediante algoritmos de hashing seguro, y la estructura de la base de datos aísla la información de cada usuario.
 
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-⚙️ Cómo se puede acceder al proyecto
+
+## ⚙️ Cómo se puede acceder al proyecto
 
 Para correr este proyecto en un entorno local, sigue estos pasos:
 
@@ -74,11 +74,12 @@ Aplicar Migraciones: Abre la consola del administrador de paquetes (o tu termina
 
 Ejecutar la Solución:
 
-**Inicia el proyecto GastoHormiga.API para levantar el servidor backend.**
+Inicia el proyecto GastoHormiga.API para levantar el servidor backend.
 
 Inicia el proyecto GastoHormiga.Web (Blazor WebAssembly) para levantar el cliente.
 
 Uso: Navega a la URL local (por defecto suele ser https://localhost:xxxx) y regístrate como un nuevo usuario para probar el sistema.
+
 
 *************************************************************************************************************************************************************************
 
